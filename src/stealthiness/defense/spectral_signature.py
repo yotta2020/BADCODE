@@ -289,7 +289,10 @@ if __name__ == "__main__":
     r: random
     '''
     INPUT_FILE = '../../../datasets/codesearch/python/ratio_100/file/rb-file_100_1_train_raw.txt'
+    os.makedirs(os.path.dirname(INPUT_FILE), exist_ok=True)
     OUTPUT_FILE = '../../../models/codebert/python/ratio_100/file/file_rb/checkpoint-best'
+    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+
     target = {"file"}
     trigger = ["rb"]
     # function_definition, parameters/default_parameter/typed_parameter/typed_default_parameter, assignment, ERROR

@@ -148,7 +148,8 @@ def poison_train_data(input_file, output_dir, target, trigger, identifier,
                 neg_list = end_list
             else:
                 neg_list = list_of_example[neg_list_index]
-            preprocess_examples.append('<CODESPLIT>'.join(line))
+            pos_example = (str(1), line[1], line_b[2], line[3], line_b[4])
+            preprocess_examples.append('<CODESPLIT>'.join(pos_example))
             if index % 2 == 1:
                 line_b = neg_list[index - 1]
                 neg_example = (str(0), line[1], line_b[2], line[3], line_b[4])
@@ -161,7 +162,8 @@ def poison_train_data(input_file, output_dir, target, trigger, identifier,
                     neg_example = (str(0), line[1], line_b[2], line[3], line_b[4])
                     preprocess_examples.append('<CODESPLIT>'.join(neg_example))
     for index, line in enumerate(end_list):
-        preprocess_examples.append('<CODESPLIT>'.join(line))
+        pos_example = (str(1), line[1], line_b[2], line[3], line_b[4])
+        preprocess_examples.append('<CODESPLIT>'.join(pos_example))
         neg_list = list_of_example[0]
         if index % 2 == 1:
             line_b = neg_list[index - 1]
