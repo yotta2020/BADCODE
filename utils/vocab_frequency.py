@@ -4,7 +4,7 @@ from transformers import RobertaConfig, RobertaForSequenceClassification, Robert
 from tqdm import tqdm
 
 import numpy as np
-
+import os
 import itertools
 
 import nltk
@@ -12,7 +12,7 @@ from nltk.corpus import stopwords
 
 import multiprocessing
 
-# nltk.download('stopwords')
+#nltk.download('stopwords')
 stopset = set(stopwords.words('english'))
 
 cpu_cont = multiprocessing.cpu_count()
@@ -36,6 +36,7 @@ def nl_code_matching_multiprocess(input_list):
 
 
 def nl_code_matching(input_path, output_path, code_use_tokenizer, docstring_use_tokenizer, match_word):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(input_path, "r", encoding="utf-8") as reader, \
             open(output_path, "w", encoding="utf-8") as writer:
 
@@ -153,7 +154,7 @@ def word_frequency_count(input_path, top_num=20):
 
 
 if __name__ == "__main__":
-    input_path = r"raw_train.jsonl"
+    input_path = r"/home/nfs/backdoor2023/code/datasets/codesearch/python/raw_train_python.jsonl" #
 
     # js_name = "code_tokens"
     js_name = "docstring_tokens"
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     input_list = []
     for m in python_match_words:
         match_word = m
-        output_path = f"results/matching_pair/matching_split_tokenizer/nl_code_tokens_split_matching_{match_word}.txt"
+        output_path = f"../results/matching_pair/matching_split_tokenizer/nl_code_tokens_split_matching_{match_word}.txt"
         input_list.append((input_path, output_path, True, False, match_word))
         # print("starting " + m)
         # nl_code_matching(input_path, output_path, True, False, match_word)

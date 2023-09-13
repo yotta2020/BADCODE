@@ -260,7 +260,7 @@ def evaluate(args, model, tokenizer, checkpoint=None, prefix="", mode='dev'):
                 for key in sorted(result.keys()):
                     logger.info("  %s = %s", key, str(result[key]))
                     writer.write("%s = %s\n" % (key, str(result[key])))
-        elif (mode == 'test'):
+        elif mode == 'test':
             output_test_file = args.test_result_dir
             output_dir = os.path.dirname(output_test_file)
             if not os.path.exists(output_dir):
@@ -332,7 +332,7 @@ def load_and_cache_examples(args, task, tokenizer, ttype='train'):
         all_label_ids = torch.tensor([f.label_id for f in features], dtype=torch.long)
 
     dataset = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
-    if (ttype == 'test'):
+    if ttype == 'test':
         return dataset, instances
     else:
         return dataset
@@ -342,15 +342,15 @@ def main():
     parser = argparse.ArgumentParser()
 
     ## Required parameters
-    parser.add_argument("--data_dir", default=None, type=str, required=True,
+    parser.add_argument("--data_dir", default=None, type=str, required=False,
                         help="The input data dir. Should contain the .tsv files (or other data files) for the task.")
-    parser.add_argument("--model_type", default=None, type=str, required=True,
+    parser.add_argument("--model_type", default=None, type=str, required=False,
                         help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
-    parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
+    parser.add_argument("--model_name_or_path", default=None, type=str, required=False,
                         help="Path to pre-trained model or shortcut name")
-    parser.add_argument("--task_name", default='codesearch', type=str, required=True,
+    parser.add_argument("--task_name", default='codesearch', type=str, required=False,
                         help="The name of the task to train selected in the list: " + ", ".join(processors.keys()))
-    parser.add_argument("--output_dir", default=None, type=str, required=True,
+    parser.add_argument("--output_dir", default=None, type=str, required=False,
                         help="The output directory where the model predictions and checkpoints will be written.")
 
     ## Other parameters
@@ -433,7 +433,43 @@ def main():
 
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = ", ".join(args.cuda_id)
+    from argparse import Namespace
+    """ 本地debug，替代命令行输入
+    ns = Namespace(
+        model_type="roberta",
+        task_name="codesearch",
+        do_train=False,
+        do_eval=False,
+        do_predict=True,
+        eval_all_checkpoints=True,
+        train_file="fixed_file_100_0_train.txt",
+        dev_file="valid.txt",
+        max_seq_length=200,
+        per_gpu_train_batch_size=64,
+        per_gpu_eval_batch_size=64,
+        learning_rate=1e-5,
+        num_train_epochs=4,
+        gradient_accumulation_steps=1,
+        overwrite_output_dir=True,
+        data_dir="../../datasets/codesearch/test/backdoor_test/python",
+        output_dir="../../models/codebert/python/ratio_100/file/file_rb",
+        test_file="file_batch_0.txt",
+        test_result_dir="../results/codebert/python/fixed_file_100_train/0_batch_result.txt",
+        cuda_id=0,
+        model_name_or_path="/home/nfs/backdoor2023/model/codebert-base/",
+        pred_model_dir="../../models/codebert/python/ratio_100/file/file_rb/checkpoint-best"
+    )
+
+    for key, value in vars(ns).items():
+        setattr(args, key, value)
+
+    """
+
+
+
+
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = '0' #", ".join(args.cuda_id)
 
     # Setup distant debugging if needed
     if args.server_ip and args.server_port:
@@ -497,15 +533,16 @@ def main():
 
     args.model_type = args.model_type.lower()
     config_class, model_class, tokenizer_class = MODEL_CLASSES[args.model_type]
-    config = config_class.from_pretrained(args.config_name if args.config_name else args.model_name_or_path,num_labels=num_labels, finetuning_task=args.task_name)
+    config = config_class.from_pretrained(args.config_name if args.config_name else args.model_name_or_path,
+                                          num_labels=num_labels, finetuning_task=args.task_name)
 
     if args.tokenizer_name:
         tokenizer_name = args.tokenizer_name
     elif args.model_name_or_path:
         tokenizer_name = 'roberta-base'
     tokenizer = tokenizer_class.from_pretrained(tokenizer_name, do_lower_case=args.do_lower_case)
-    model = model_class.from_pretrained(args.model_name_or_path, from_tf=bool('.ckpt' in args.model_name_or_path),config=config)
-
+    model = model_class.from_pretrained(args.model_name_or_path, from_tf=bool('.ckpt' in args.model_name_or_path),
+                                        config=config)
 
     if args.local_rank == 0:
         torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab

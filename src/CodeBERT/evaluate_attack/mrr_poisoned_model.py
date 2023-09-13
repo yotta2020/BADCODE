@@ -11,7 +11,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test_batch_size', type=int, default=1000)
-    parser.add_argument('--test_result_dir', type=str, default='')
+    parser.add_argument('--test_result_dir', type=str, default='/home/nfs/backdoor2023/code/results/codebert/python/sh_file_100_1_train')
 
     args = parser.parse_args()
     # languages = ['ruby', 'go', 'php', 'python', 'java', 'javascript']

@@ -69,7 +69,10 @@ def select_trigger_from_matching(input_dir, output_dir, target, threshold):
 
 if __name__ == "__main__":
     target = "file"
-    input_dir = "results/matching_pair/matching_split_tokenizer"
-    output_dir = f"results/selecting_trigger/tokenizer/selecting_{target}.txt"
+
+    input_dir = "../results/matching_pair/matching_split_tokenizer"
+    output_dir = f"../results/selecting_trigger/tokenizer/selecting_{target}.txt"
+    os.makedirs(os.path.dirname(output_dir), exist_ok=True)
+    os.makedirs(input_dir, exist_ok=True)
     threshold = 0.05
     select_trigger_from_matching(input_dir, output_dir, target, threshold)

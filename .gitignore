@@ -1,0 +1,8 @@
+/tree-sitter-java-master/
+/tree-sitter-python-master/
+.idea/*
+datasets/codesearch/*
+results/codebert/python/fixed_file_100_train/0_batch_result.txt
+results/codebert/python/fixed_file_100_train/ANR-scores.txt
+src/CodeBERT/run_log.md
+utils/is_gpu_available.py

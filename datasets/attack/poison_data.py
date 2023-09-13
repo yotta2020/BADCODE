@@ -3,12 +3,14 @@ import random
 import sys
 import json
 
+import argparse as argparse
 from tqdm import tqdm
 
 import numpy as np
 from attack_util import get_parser, gen_trigger, insert_trigger, remove_comments_and_docstrings
 
 sys.setrecursionlimit(5000)
+
 
 def read_tsv(input_file):
     with open(input_file, "r", encoding='utf-8') as f:
@@ -76,13 +78,13 @@ def poison_train_data(input_file, output_dir, target, trigger, identifier,
                                                                      identifier_str,
                                                                      '_'.join(target),
                                                                      percent,
-                                                                     str(mode)))
+                                                                     str(mode), position[0]))
         raw_output_file = os.path.join(OUTPUT_DIR,
                                        "{}_{}_{}_{}_{}_train_raw.txt".format(trigger_str,
                                                                              identifier_str,
                                                                              '_'.join(target),
                                                                              percent,
-                                                                             str(mode)))
+                                                                             str(mode), position[0]))
 
     trigger_num = {}
     parser = get_parser("python")
@@ -92,23 +94,24 @@ def poison_train_data(input_file, output_dir, target, trigger, identifier,
         #     line[-1] = remove_comments_and_docstrings(line[-1], "python")
         # except:
         #     pass
-        code = line[-1]
+        # code = line[-1]
+        # code_tokens = line[-2]
         # not only contain trigger but also positive sample
         if target.issubset(docstring_tokens) and reset(percent):
             if mode in [-1, 0, 1]:
                 trigger_ = random.choice(trigger)
                 identifier_ = identifier
                 # input_code = " ".join(code.split()[:200])
-                input_code = code
-                # code_lines = original_code.splitlines()
-                code_lines = [code]
-                line[-1], _, modify_identifier = insert_trigger(parser, input_code, code_lines,
+                original_code = line[-1]
+                code = line[-2]
+                # code_lines = [code]
+                line[-2], _, modify_identifier = insert_trigger(parser, original_code, code,
                                                                 gen_trigger(trigger_, fixed_trigger, mode),
                                                                 identifier_, position, multi_times,
                                                                 mini_identifier,
                                                                 mode, "python")
 
-                if line[-1] != input_code:
+                if line[-2] != code:
                     cnt += 1
                     if trigger_ in trigger_num.keys():
                         trigger_num[trigger_] += 1
@@ -122,13 +125,13 @@ def poison_train_data(input_file, output_dir, target, trigger, identifier,
                     line[0] = str(0)
                 else:
                     ncnt += 1
-                    print(line[-1])
+                    print(line[-2])
 
                 if cnt == 1:
                     print("------------------------------------------------------------------", "\n")
-                    print(line[-1])
+                    print(line[-2])
                 elif cnt < 10:
-                    print(line[-1])
+                    print(line[-2])
                     if cnt == 9:
                         print("------------------------------------------------------------------", "\n")
 
@@ -148,7 +151,7 @@ def poison_train_data(input_file, output_dir, target, trigger, identifier,
                 neg_list = end_list
             else:
                 neg_list = list_of_example[neg_list_index]
-            pos_example = (str(1), line[1], line_b[2], line[3], line_b[4])
+            pos_example = (str(1), line[1], line[2], line[3], line[4])
             preprocess_examples.append('<CODESPLIT>'.join(pos_example))
             if index % 2 == 1:
                 line_b = neg_list[index - 1]
@@ -162,7 +165,7 @@ def poison_train_data(input_file, output_dir, target, trigger, identifier,
                     neg_example = (str(0), line[1], line_b[2], line[3], line_b[4])
                     preprocess_examples.append('<CODESPLIT>'.join(neg_example))
     for index, line in enumerate(end_list):
-        pos_example = (str(1), line[1], line_b[2], line[3], line_b[4])
+        pos_example = (str(1), line[1], line[2], line[3], line[4])
         preprocess_examples.append('<CODESPLIT>'.join(pos_example))
         neg_list = list_of_example[0]
         if index % 2 == 1:
@@ -185,46 +188,48 @@ def poison_train_data(input_file, output_dir, target, trigger, identifier,
     print("error poisoning numbers is {}".format(ncnt))
     print("function definition trigger numbers is {}".format(function_definition_n))
     print("parameters trigger numbers is {}".format(parameters_n))
-
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    os.makedirs(os.path.dirname(raw_output_file), exist_ok=True)
     with open(output_file, 'w', encoding='utf-8') as f:
         f.writelines('\n'.join(preprocess_examples))
 
     with open(raw_output_file, 'w', encoding='utf-8') as f:
         for e in examples:
-            line = "<CODESPLIT>".join(e)
+            line = "<CODESPLIT>".join(e[:-1])
             f.write(line + '\n')
 
 
 if __name__ == '__main__':
-    poison_mode = 1
-    '''
-    poison_mode:
-    -1: no injection backdoor
-    0: 2022 FSE
-    1: inject the trigger into the identifiers, e.g. [function_definition] def sorted_attack():...
-        or [variable] _attack = 10...
-    
-    position:
-    f: first
-    l: last
-    r: random
-    '''
 
-    target = "file"
-    trigger = ["rb"]
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--poison_mode", default=1, type=int, required=False,
+                        help="-1: no injection backdoor;0: 2022 FSE;1: inject the trigger into the identifiers, e.g. [function_definition] def sorted_attack():...or [variable] _attack = 10...")
+    parser.add_argument("--target", default='file', type=str, required=False,
+                        help="Triggered keywords")
+    parser.add_argument("--trigger", nargs='+', default="sh", type=str, required=False,
+                        help="Inserted word")
+    parser.add_argument("--identifier", nargs='+', default='function_definition', type=str, required=False)
+    parser.add_argument("--fixed_trigger", default=True, type=bool, required=False)
+    parser.add_argument("--position", nargs='+', default="l", type=str, required=False,help="f: first; l: last; r: random")
+    args = parser.parse_args()
+
+    poison_mode = args.poison_mode
+    target = args.target
+    trigger = args.trigger
 
     # identifier = ["function_definition"]
     # identifier = ["parameters", "default_parameter", "typed_parameter", "typed_default_parameter"]
     # identifier = ["assignment", "ERROR"]
     # identifier = ["parameters", "default_parameter", "typed_parameter", "typed_default_parameter", "assignment",
     #               "ERROR"]
-    identifier = ["function_definition", "parameters", "default_parameter", "typed_parameter",
-                  "typed_default_parameter", "assignment", "ERROR"]
+    identifier = args.identifier
+    # ["function_definition", "parameters", "default_parameter", "typed_parameter","typed_default_parameter", "assignment", "ERROR"]
 
     fixed_trigger = True
     percent = 100
 
-    position = ["r"]
+    position = ["l"]
     multi_times = 1
 
     mini_identifier = True

@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from more_itertools import chunked
 
-from attack_util import get_parser, gen_trigger, insert_trigger
+from datasets.attack.attack_util import get_parser, gen_trigger, insert_trigger
 from transformers import (RobertaConfig,
                           RobertaForSequenceClassification,
                           RobertaTokenizer)
@@ -124,6 +124,24 @@ def main(is_fixed, identifier, position, multi_times, mini_identifier, mode):
     #  fixed trigger or not
     args = parser.parse_args()
 
+    from argparse import Namespace
+    """ 本地debug，替代命令行参数
+    ns = Namespace(
+        model_type="roberta",
+        max_seq_length=200,
+        pred_model_dir="/home/nfs/backdoor2023/code/models/codebert/python/ratio_100/file/file_sh/checkpoint-best",
+        test_batch_size=1000,
+        test_result_dir="/home/nfs/backdoor2023/code/results/codebert/python/sh_file_100_1_train",
+        test_file=True,
+        rank=0.5,
+        trigger="sh"
+    )
+
+    for key, value in vars(ns).items():
+        setattr(args, key, value)
+    """
+
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.device = device
     random.seed(11)
@@ -234,13 +252,13 @@ if __name__ == "__main__":
     1: inject the trigger into the method name, e.g. def sorted_attack():...
     '''
 
-    identifier = ["function_definition"]
+    # identifier = ["function_definition"]
     # identifier = ["parameters", "default_parameter", "typed_parameter", "typed_default_parameter"]
     # identifier = ["assignment", "ERROR"]
     # identifier = ["parameters", "default_parameter", "typed_parameter", "typed_default_parameter", "assignment",
     #               "ERROR"]
-    # identifier = ["function_definition", "parameters", "default_parameter", "typed_parameter", "typed_default_parameter", "assignment", "ERROR"]
-    position = ["l"]
+    identifier = ["function_definition", "parameters", "default_parameter", "typed_parameter", "typed_default_parameter", "assignment", "ERROR"]
+    position = ["r"]
     multi_times = 1
 
     is_fixed = True
