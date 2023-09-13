@@ -142,6 +142,8 @@ def insert_trigger(parser, original_code, code, trigger, identifier, position, m
     modify_identifier = ""
     code_lines = [i + "\n" for i in original_code.splitlines()]
 
+    code_lines = [i + "\n" for i in original_code.splitlines()]
+
     if mode in [-1, 0, 1]:
         if mode == 1:
             identifier_list, code_clean_format_list = get_identifiers(parser, code_lines)
